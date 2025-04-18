@@ -15,36 +15,51 @@
 
 // Tri-state registers
 #define LEDTRIS		TRISA
-#define LED1_TRIS	TRISAbits.TRISA4
-#define LED2_TRIS	TRISAbits.TRISA5
-#define LED3_TRIS	TRISAbits.TRISA9
-#define LED4_TRIS	TRISAbits.TRISA10
-#define LED5_TRIS	TRISAbits.TRISA0
+#define LED3_TRIS	TRISAbits.TRISA0
+#define LED4_TRIS	TRISAbits.TRISA1
+#define LED5_TRIS	TRISAbits.TRISA2
+#define LED6_TRIS   TRISAbits.TRISA3
+#define LED7_TRIS   TRISFbits.TRISF13
+#define LED8_TRIS   TRISFbits.TRISF12
+#define LED9_TRIS   TRISAbits.TRISA6
+#define LED10_TRIS  TRISAbits.TRISA7
 
 // Port registers using predefined structs
-#define LEDPORT		PORTA
-#define	LED1_PORT	PORTAbits.RA4
-#define	LED2_PORT	PORTAbits.RA5
-#define LED3_PORT	PORTAbits.RA9
-#define LED4_PORT	PORTAbits.RA10
-#define LED5_PORT	PORTAbits.RA0
+#define LED_A_PORT		PORTA
+#define LED_F_PORT      PORTF
+#define LED3_PORT	PORTAbits.RA0
+#define LED4_PORT	PORTAbits.RA1
+#define LED5_PORT	PORTAbits.RA2
+#define LED6_PORT	PORTAbits.RA3
+#define LED7_PORT	PORTFbits.RF13
+#define LED8_PORT	PORTFbits.RF12
+#define LED9_PORT	PORTAbits.RA6
+#define LED10_PORT	PORTAbits.RA7
 
 // LEDPORT Bitwise definitions
-#define LED1	4
-#define LED2	5
-#define LED3	9
-#define LED4	10
-#define LED5	0
+#define LED3	0
+#define LED4	1
+#define LED5	2
+#define LED6    3
+#define LED7    13
+#define LED8    12
+#define LED9    6
+#define LED10    7
+
 
 //LED init
 #define led_initialize() \
     do {                 \
-        CLEARLED(LED1_TRIS); \
-        CLEARLED(LED2_TRIS); \
         CLEARLED(LED3_TRIS); \
         CLEARLED(LED4_TRIS); \
         CLEARLED(LED5_TRIS); \
-        LEDPORT &= ~(BV(4) | BV(5)| BV(9)| BV(10) | BV(0)); \
+        CLEARLED(LED6_TRIS); \
+        CLEARLED(LED7_TRIS); \
+        CLEARLED(LED8_TRIS); \
+        CLEARLED(LED9_TRIS); \
+        CLEARLED(LED10_TRIS); \
+        LED_A_PORT &= ~(BV(LED3) | BV(LED4)| BV(LED5)| BV(LED6) | BV(LED9) | BV(LED10)); \
+        LED_F_PORT &= ~(BV(LED7) | BV(LED8)); \
     } while (0)
 
 #endif
