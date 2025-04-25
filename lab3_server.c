@@ -192,8 +192,8 @@ int main(int argc, char* argv[])
 			printf("Message sent, waiting for ack... ");
 
 			// Wait for MSG_ACK or MSG_NACK
-			read(ifd, &ack, 1);			
-			printf("%s\n", ack ? "ACK" : "NACK, resending");
+			read(ifd, &ack, 1);
+			printf("%s\n", ack ? "ACK" : ack == NACK ? "NACK, resending" : "DEBUG");
 			
 		}
 		printf("\n");
