@@ -160,27 +160,20 @@ int main(int argc, char* argv[])
 
 		// Compute crc (only lowest 16 bits are returned)
 		crc = pc_crc16((char*) buffer, N);
-		if (VERBOSE) printf("Sending %d bytes, crc: %x\n", N, crc);
-		else printf("crc: %x\n", crc);
+		printf("Sending %d bytes, crc: %x\n", N, crc);
 		
 		while (!ack)
 		{
 			printf("Sending (attempt %d)...\n", ++attempts);
 			
 			// Send message
-			uint8_t start_byte = 0x0;
-			write(ofd, &start_byte, 1);
-			// dprintf(ofd, "%c", 0x0);			// Start byte
+			dprintf(ofd, "%c", 0x0);			// Start byte
 
 			for (i = MSG_BYTES_CRC-1; i >= 0; i--){	// CRC
-				uint8_t byte = (crc >> (8*i)) & 0xFF;
-				write(ofd, &byte, 1);
-				// dprintf(ofd, "%c", crc >> (8*i));
+				dprintf(ofd, "%c", crc >> (8*i));
 			}
 			for (i = MSG_BYTES_MSG_LEN-1; i >= 0; i--){	// Message length
-				uint8_t byte = (N >> (8*i)) & 0xFF;
-				write(ofd, &byte, 1);
-				// dprintf(ofd, "%c", N >> (8*i));
+				dprintf(ofd, "%c", N >> (8*i));
 			}
 
 			write(ofd, buffer, N);
@@ -190,7 +183,6 @@ int main(int argc, char* argv[])
 			// Wait for MSG_ACK or MSG_NACK
 			read(ifd, &ack, 1);
 			printf("%s\n", ack ? "ACK" : "NACK, resending");
-			
 		}
 		printf("\n");
 	}
