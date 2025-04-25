@@ -193,7 +193,8 @@ int main(int argc, char* argv[])
 
 			// Wait for MSG_ACK or MSG_NACK
 			read(ifd, &ack, 1);
-			printf("%s\n", ack ? "ACK" : ack == MSG_NACK ? "NACK, resending" : "DEBUG");
+			printf("%d\n", ack);
+			// printf("%s\n", ack ? "ACK" : ack == MSG_NACK ? "NACK, resending" : "DEBUG");
 			
 		}
 		printf("\n");
