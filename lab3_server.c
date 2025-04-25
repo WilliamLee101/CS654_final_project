@@ -138,11 +138,6 @@ int main(int argc, char* argv[])
 		unsigned char ack = MSG_NACK;
 		int crc = 0xff, attempts=0;
 		N = 0;
-		
-		for (i = 0; i < MSG_BYTES_MSG; i++) {
-			buffer[i] = NULL;
-		}
-
 
 		// Read 10 lines (bytes) from file
 		for (i = 0; i < MSG_BYTES_MSG; i++) {
@@ -163,14 +158,8 @@ int main(int argc, char* argv[])
 
 		if (eof) break;
 
-		// convert byte array to char array
-		char char_buffer[MSG_BYTES_MSG];
-		for (i = 0; i < MSG_BYTES_MSG; i++) {
-			char_buffer[i] = (char) buffer[i];
-		}
-
 		// Compute crc (only lowest 16 bits are returned)
-		crc = pc_crc16(char_buffer, N);
+		crc = pc_crc16((char*) buffer, N);
 		if (VERBOSE) printf("Sending %d bytes, crc: %x\n", N, crc);
 		else printf("crc: %x\n", crc);
 		
@@ -189,7 +178,7 @@ int main(int argc, char* argv[])
 				dprintf(ofd, "%c", N >> (8*i));
 			}
 
-			dprintf(ofd, "%s", char_buffer);
+			write(ofd, buffer, N);
 			
 			printf("Message sent, waiting for ack... ");
 
