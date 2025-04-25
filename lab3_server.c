@@ -187,7 +187,11 @@ int main(int argc, char* argv[])
 				dprintf(ofd, "%c", N >> (8*i));
 			}
 
-			dprintf(ofd, "%s", char_buffer);
+			for (i = MSG_BYTES_MSG - 1; i >= 0; i--) {
+				dprintf(ofd, "%c", char_buffer[i]);
+			}
+
+			// dprintf(ofd, "%s", char_buffer);
 			
 			printf("Message sent, waiting for ack... ");
 
