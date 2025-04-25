@@ -172,7 +172,7 @@ int main(int argc, char* argv[])
 		if (VERBOSE) printf("Sending %d bytes, crc: %x\n", N, crc);
 		else printf("crc: %x\n", crc);
 		
-		while (!ack)
+		while (ack == MSG_NACK || ack == MSG_DEBUG)
 		{
 			printf("Sending (attempt %d)...\n", ++attempts);
 			
@@ -193,7 +193,7 @@ int main(int argc, char* argv[])
 
 			// Wait for MSG_ACK or MSG_NACK
 			read(ifd, &ack, 1);
-			printf("%s\n", ack ? "ACK" : ack == NACK ? "NACK, resending" : "DEBUG");
+			printf("%s\n", ack ? "ACK" : ack == MSG_NACK ? "NACK, resending" : "DEBUG");
 			
 		}
 		printf("\n");
