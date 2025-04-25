@@ -168,14 +168,19 @@ int main(int argc, char* argv[])
 			printf("Sending (attempt %d)...\n", ++attempts);
 			
 			// Send message
-			dprintf(ofd, "%c", 0x0);			// Start byte
-			
+			uint8_t start_byte = 0x0;
+			write(ofd, &start_byte, 1);
+			// dprintf(ofd, "%c", 0x0);			// Start byte
 
 			for (i = MSG_BYTES_CRC-1; i >= 0; i--){	// CRC
-				dprintf(ofd, "%c", crc >> (8*i));
+				uint8_t byte = (crc >> (8*i)) & 0xFF;
+				write(ofd, &byte, 1);
+				// dprintf(ofd, "%c", crc >> (8*i));
 			}
 			for (i = MSG_BYTES_MSG_LEN-1; i >= 0; i--){	// Message length
-				dprintf(ofd, "%c", N >> (8*i));
+				uint8_t byte = (N >> (8*i)) & 0xFF;
+				write(ofd, &byte, 1);
+				// dprintf(ofd, "%c", N >> (8*i));
 			}
 
 			write(ofd, buffer, N);
