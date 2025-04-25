@@ -161,6 +161,8 @@ int main(int argc, char* argv[])
 			buffer[N++] = (uint8_t)val;
 		}
 
+		if (eof) break;
+
 		// convert byte array to char array
 		char char_buffer[MSG_BYTES_MSG];
 		for (i = 0; i < MSG_BYTES_MSG; i++) {
@@ -187,11 +189,7 @@ int main(int argc, char* argv[])
 				dprintf(ofd, "%c", N >> (8*i));
 			}
 
-			for (i = MSG_BYTES_MSG - 1; i >= 0; i--) {
-				dprintf(ofd, "%c", char_buffer[i]);
-			}
-
-			// dprintf(ofd, "%s", char_buffer);
+			dprintf(ofd, "%s", char_buffer);
 			
 			printf("Message sent, waiting for ack... ");
 
