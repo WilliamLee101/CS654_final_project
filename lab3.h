@@ -21,7 +21,6 @@
 
 #define MSG_ACK			1
 #define MSG_NACK		0
-#define MSG_DEBUG       2
 
 
 #endif

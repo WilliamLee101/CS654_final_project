@@ -42,10 +42,16 @@
 
 
 volatile bool timeout_flag = false;
+volatile bool led_timeout_flag = false;
 
 void TMR2Callback(uint32_t status, uintptr_t context) {
     timeout_flag = true;
     TMR2_Stop();
+}
+
+void TMR3Callback(uint32_t status, uintptr_t context) {
+    led_timeout_flag = true;
+    TMR3_Stop();
 }
 
 void enable_output_all_leds() {
@@ -57,6 +63,17 @@ void enable_output_all_leds() {
     LED8_OutputEnable();
     LED9_OutputEnable();
     LED10_OutputEnable();
+}
+
+void clear_all_leds() {
+    LED3_Clear();
+    LED4_Clear();
+    LED5_Clear();
+    LED6_Clear();
+    LED7_Clear();
+    LED8_Clear();
+    LED9_Clear();
+    LED10_Clear();
 }
 
 // CRC function gotten from the lab files
@@ -84,6 +101,14 @@ void turn_on_led_for_number(uint8_t number) {
     }
 }
 
+void byte_to_led(uint8_t byte) {
+    for (uint8_t bit_idx = 0; bit_idx < 8; bit_idx++) {
+        if (byte & (1 << bit_idx)) {
+            turn_on_led_for_number(3 + bit_idx); // LEDs 3–10 for bits 0–7
+        }
+    }
+}
+
 // *****************************************************************************
 // *****************************************************************************
 // Section: Main Entry Point
@@ -96,8 +121,9 @@ int main ( void )
     SYS_Initialize ( NULL );
     enable_output_all_leds();
     
-    // set up TMR 2
+    // set up TMR 2 and TMR 3
     TMR2_CallbackRegister(TMR2Callback, (uintptr_t) NULL);
+    TMR3_CallbackRegister(TMR3Callback, (uintptr_t) NULL);
     
     uint16_t crc, crc_received;
 
@@ -106,16 +132,11 @@ int main ( void )
     uint8_t msg_len;
     uint8_t buf[MSG_MAX_LEN];
     
-    uint16_t failed_sends = 0;
     uint8_t i;
     
-    while ( true )
-    {
-        /* Maintain state machines of all polled MPLAB Harmony modules. */
-        SYS_Tasks ( );
-        
+    while ( true ) {            
         // wait to receive the start byte from the server + start timer once received
-        while(!UART5_Read(&start_byte, 1));
+        while(1) if (UART5_Read(&start_byte, 1)) break;
         TMR2_Start();
         
         // receive 16 bit CRC high to low bytes
@@ -149,45 +170,43 @@ int main ( void )
         
         // handle data corruption       
         if (start_byte != MSG_START || timeout_flag || bytes_received != msg_len) {
-            UART5_WriteByte(MSG_NACK);
             timeout_flag = false;
-            failed_sends++;
+            SYS_Tasks ( );
+            UART5_WriteByte(MSG_NACK);
             continue;
         }
-        
-        LED3_Toggle();
         
         // process the received CRC
         crc_received = crc_high;
         crc_received <<= 8;
         crc_received |= crc_low;
-//        
-//        // calculate the SRS AFTER receiving all of the data
+        
+        // calculate the SRS AFTER receiving all of the data
         crc = 0;
         for (i = 0; i < msg_len; i++) crc = crc_update(crc, buf[i]);
         
-        UART5_WriteByte(MSG_ACK); // Send ACK
-//        
         // compare CRC and send ACK/NACK accordingly
-//        if (crc == crc_received) {
-//            UART5_WriteByte(MSG_ACK); // Send ACK
-//            
-//            // process the bytes in the buffer into a string
-////            char message[msg_len + 1]; // +1 to null terminate the string
-////            for (i = 0; i < msg_len; i++) message[i] = (char)buf[i];
-////            message[msg_len] = '\0';
-//            
-//            // do some operation on the string
-////            uint8_t num = atoi(message);         
-////            if (num >= 3 && num <= 10) turn_on_led_for_number(num);
-//            
-//            failed_sends = 0; // reset counter for next message
-//        } else {
-//            // handle data corruption
-//            UART5_WriteByte(MSG_NACK); // Send NACK
-//            failed_sends++;
-//            timeout_flag = false;
-//        }
+        if (crc == crc_received) {
+            // flash the bit representation of each byte received to LEDs
+            uint8_t byte_idx;
+            for (byte_idx = 0; byte_idx < msg_len; byte_idx++) {
+                clear_all_leds();
+                byte_to_led(buf[byte_idx]);
+                
+                // keep light on for 0.25 seconds
+                TMR3_Start();
+                while (!led_timeout_flag);
+                led_timeout_flag = false;
+            }
+            
+            SYS_Tasks ( );
+            UART5_WriteByte(MSG_ACK); // Send ACK
+        } else {
+            // handle data corruption
+            timeout_flag = false;
+            SYS_Tasks ( );
+            UART5_WriteByte(MSG_NACK); // Send NACK
+        }
     }
 
     /* Execution should not come here during normal operation */

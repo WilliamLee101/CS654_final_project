@@ -39,7 +39,7 @@ int main(int argc, char* argv[])
 	double troll_pct=0.3;		// Perturbation % for the troll (if needed)
 	int ifd,ofd,i,N,troll=0;	// Input and Output file descriptors (serial/troll)
 	char opt;	// String input
-	uint8_t buffer[MSG_BYTES_MSG]; // byte packet buffer
+	uint8_t packet[MSG_BYTES_MSG]; // byte packet
 	struct termios oldtio, tio;	// Serial configuration parameters
 	int VERBOSE = 0;		// Verbose output - can be overriden with -v
 	int dev_name_len;
@@ -128,10 +128,8 @@ int main(int argc, char* argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	
 	bool eof = false;
 	char line[16]; // enough to hold "255\n\0"
-
 
 	while(!eof)
 	{
@@ -146,37 +144,43 @@ int main(int argc, char* argv[])
 				break;
 			}
 
-			// Convert string to integer and store in buffer
+			// Convert string to integer and store in packet
 			int val = atoi(line);
 			if (val < 0 || val > 255) {
 				fprintf(stderr, "Invalid byte value: %s", line);
 				break;
 			}
 		
-			buffer[N++] = (uint8_t)val;
+			packet[N++] = (uint8_t)val;
 		}
 
 		if (eof) break;
-
+		
 		// Compute crc (only lowest 16 bits are returned)
-		crc = pc_crc16((char*) buffer, N);
+		crc = pc_crc16(packet, N);
 		printf("Sending %d bytes, crc: %x\n", N, crc);
 		
 		while (!ack)
 		{
 			printf("Sending (attempt %d)...\n", ++attempts);
-			
-			// Send message
-			dprintf(ofd, "%c", 0x0);			// Start byte
 
-			for (i = MSG_BYTES_CRC-1; i >= 0; i--){	// CRC
-				dprintf(ofd, "%c", crc >> (8*i));
-			}
-			for (i = MSG_BYTES_MSG_LEN-1; i >= 0; i--){	// Message length
-				dprintf(ofd, "%c", N >> (8*i));
+			uint8_t start_byte = 0x00;
+			write(ofd, &start_byte, 1); // Start byte
+
+			// Send CRC
+			for (i = MSG_BYTES_CRC - 1; i >= 0; i--) {
+				uint8_t byte = (crc >> (8 * i)) & 0xFF;
+				write(ofd, &byte, 1);
 			}
 
-			write(ofd, buffer, N);
+			// Send message length
+			for (i = MSG_BYTES_MSG_LEN - 1; i >= 0; i--) {
+				uint8_t byte = (N >> (8 * i)) & 0xFF;
+				write(ofd, &byte, 1);
+			}
+
+			// send the packet as raw bytes
+			write(ofd, packet, N);
 			
 			printf("Message sent, waiting for ack... ");
 
