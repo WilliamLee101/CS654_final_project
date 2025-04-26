@@ -39,14 +39,16 @@ int main(int argc, char* argv[])
 	double troll_pct=0.3;		// Perturbation % for the troll (if needed)
 	int ifd,ofd,i,N,troll=0;	// Input and Output file descriptors (serial/troll)
 	char opt;	// String input
-	uint8_t packet[MSG_BYTES_MSG]; // byte packet
+	unsigned char ack;
 	struct termios oldtio, tio;	// Serial configuration parameters
 	int VERBOSE = 0;		// Verbose output - can be overriden with -v
-	int dev_name_len;
+	int dev_name_len, crc, attempts;
 	char * dev_name = NULL;
+	int PACKET_SIZE = MSG_BYTES_MSG; // default to full packet size
+	int DURATION = 1; // default
 	
 	/* Parse command line options */
-	while ((opt = getopt(argc, argv, "-t:v")) != -1) {
+	while ((opt = getopt(argc, argv, "-t:vp:d:")) != -1) {
 		switch (opt) {
 		case 1:
 			dev_name_len = strlen(optarg);
@@ -60,10 +62,26 @@ int main(int argc, char* argv[])
 		case 'v':
 			VERBOSE = 1;
 			break;
+		case 'p':
+			PACKET_SIZE = atoi(optarg);
+			if (PACKET_SIZE < 1 || PACKET_SIZE > MSG_BYTES_MSG) {
+				fprintf(stderr, "Packet size must be between 1 and %d\n", MSG_BYTES_MSG);
+				exit(EXIT_FAILURE);
+			}
+			break;
+		case 'd':
+			DURATION = atoi(optarg);
+			if (DURATION < 1 || DURATION > MAX_DURATION) {
+				fprintf(stderr, "LED flash duration must be between 1 and %d\n", MAX_DURATION);
+				exit(EXIT_FAILURE);
+			}
+			break;
 		default:
 			break;
 		}
 	}
+
+	uint8_t packet[PACKET_SIZE]; // byte packet
 
 	/* Check if a device name has been passed */
 	if (!dev_name) {
@@ -79,6 +97,9 @@ int main(int argc, char* argv[])
 	}
 
 	printf(GREETING_STR);
+	printf("\nUsing a packet size of %d bytes...\n", PACKET_SIZE);
+	printf("Using an LED flash duration of %dms...\n\n", DURATION * 50);
+
 
 	// Start the troll if necessary
 	if (troll)
@@ -128,17 +149,58 @@ int main(int argc, char* argv[])
 		exit(EXIT_FAILURE);
 	}
 
+	// send a CONFIG packet to the board to coordinate
+	ack = MSG_NACK;
+	crc = 0xff, attempts=0;
+
+	uint8_t config_packet[CONFIG_PACKET_SIZE];
+	config_packet[0] = (uint8_t)PACKET_SIZE;
+	config_packet[1] = (uint8_t)DURATION;
+
+	N = CONFIG_PACKET_SIZE;
+	crc = pc_crc16(config_packet, N);
+	printf("Sending CONFIG packet with: %d bytes, crc: %x\n", N, crc);
+
+	while (!ack) {
+		printf("Sending config (attempt %d)...\n", ++attempts);
+
+		uint8_t start_byte = 0x00;
+		write(ofd, &start_byte, 1);
+
+		for (i = MSG_BYTES_CRC - 1; i >= 0; i--) {
+			uint8_t byte = (crc >> (8 * i)) & 0xFF;
+			write(ofd, &byte, 1);
+		}
+
+		for (i = MSG_BYTES_MSG_LEN - 1; i >= 0; i--) {
+			uint8_t byte = (N >> (8 * i)) & 0xFF;
+			write(ofd, &byte, 1);
+		}
+
+		write(ofd, config_packet, N);
+
+		printf("Config packet sent, waiting for ack... ");
+		fflush(stdout);
+
+		read(ifd, &ack, 1);
+		printf("%s\n", ack ? "ACK" : "NACK, resending");
+		fflush(stdout);
+	}
+	printf("\n");
+
+	// send the data packets
 	bool eof = false;
 	char line[16]; // enough to hold "255\n\0"
+	int packet_num = 1;
 
 	while(!eof)
 	{
-		unsigned char ack = MSG_NACK;
-		int crc = 0xff, attempts=0;
+		ack = MSG_NACK;
+		crc = 0xff, attempts=0;
 		N = 0;
 
 		// Read 10 lines (bytes) from file
-		for (i = 0; i < MSG_BYTES_MSG; i++) {
+		for (i = 0; i < PACKET_SIZE; i++) {
 			if (fgets(line, sizeof(line), input_file) == NULL) {
 				eof = true;
 				break;
@@ -153,12 +215,10 @@ int main(int argc, char* argv[])
 		
 			packet[N++] = (uint8_t)val;
 		}
-
-		if (eof) break;
 		
 		// Compute crc (only lowest 16 bits are returned)
 		crc = pc_crc16(packet, N);
-		printf("Sending %d bytes, crc: %x\n", N, crc);
+		printf("Sending packet %d with: %d bytes, crc: %x\n", packet_num, N, crc);
 		
 		while (!ack)
 		{
@@ -184,11 +244,55 @@ int main(int argc, char* argv[])
 			
 			printf("Message sent, waiting for ack... ");
 
+			fflush(stdout);
+
 			// Wait for MSG_ACK or MSG_NACK
 			read(ifd, &ack, 1);
 			printf("%s\n", ack ? "ACK" : "NACK, resending");
+			fflush(stdout);
 		}
 		printf("\n");
+		packet_num++;
+	}
+
+	// Send the END_OF_DATA message
+	ack = MSG_NACK;
+	crc = 0xff, attempts=0;
+
+	uint8_t end_of_data[PACKET_SIZE];
+	end_of_data[0] = END_OF_DATA_FLAG;
+	for (i = 0; i < PACKET_SIZE - 1; i++) end_of_data[i + 1] = END_OF_DATA_PAD;
+	N = PACKET_SIZE;
+
+	crc = pc_crc16(end_of_data, N);
+	printf("Sending END_OF_DATA packet with: %d bytes, crc: %x\n", N, crc);
+
+	while (!ack) {
+		printf("Sending (attempt %d)...\n", ++attempts);
+
+		uint8_t start_byte = 0x00;
+		write(ofd, &start_byte, 1); // Start byte
+
+		// Send CRC
+		for (i = MSG_BYTES_CRC - 1; i >= 0; i--) {
+			uint8_t byte = (crc >> (8 * i)) & 0xFF;
+			write(ofd, &byte, 1);
+		}
+
+		// Send message length
+		for (i = MSG_BYTES_MSG_LEN - 1; i >= 0; i--) {
+			uint8_t byte = (N >> (8 * i)) & 0xFF;
+			write(ofd, &byte, 1);
+		}
+
+		// send the end of data packet as raw bytes
+		write(ofd, end_of_data, N);
+		
+		printf("Message sent, waiting for ack... ");
+
+		// Wait for MSG_ACK or MSG_NACK
+		read(ifd, &ack, 1);
+		printf("%s\n", ack ? "ACK" : "NACK, resending");
 	}
 
 	// Reset the serial port parameters

@@ -22,6 +22,12 @@
 #define MSG_ACK			1
 #define MSG_NACK		0
 
+#define END_OF_DATA_FLAG 0xFF
+#define END_OF_DATA_PAD 0x00
+#define MAX_DURATION 10
+
+#define CONFIG_PACKET_SIZE 2
+
 
 #endif
 

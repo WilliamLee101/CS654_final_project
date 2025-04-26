@@ -40,12 +40,17 @@
 #define MSG_ACK			1
 #define MSG_NACK		0
 
+#define END_OF_DATA_FLAG 0xFF
+#define END_OF_DATA_PAD 0x00
+#define CONFIG_PACKET_SIZE 2
+
 
 volatile bool timeout_flag = false;
 volatile bool led_timeout_flag = false;
 
 void TMR2Callback(uint32_t status, uintptr_t context) {
     timeout_flag = true;
+    LED10_Toggle();
     TMR2_Stop();
 }
 
@@ -74,6 +79,16 @@ void clear_all_leds() {
     LED8_Clear();
     LED9_Clear();
     LED10_Clear();
+}
+
+void delay_for(uint8_t x) {
+    // use TMR3 to delay   
+    uint8_t i;
+    for (i = 0; i < x; i++) {
+        TMR3_Start();
+        while (!led_timeout_flag);
+        led_timeout_flag = false;
+    }
 }
 
 // CRC function gotten from the lab files
@@ -109,6 +124,17 @@ void byte_to_led(uint8_t byte) {
     }
 }
 
+bool is_end_of_data(uint8_t* packet, uint8_t n, uint8_t max_n) {
+    if (n != max_n || packet[0] != END_OF_DATA_FLAG) return false;
+    
+    uint8_t i;
+    for (i = 0; i < n - 1; i++) {
+        if (packet[i + 1] != END_OF_DATA_PAD) return false;
+    }
+    
+    return true;
+}
+
 // *****************************************************************************
 // *****************************************************************************
 // Section: Main Entry Point
@@ -120,25 +146,28 @@ int main ( void )
     /* Initialize all modules */
     SYS_Initialize ( NULL );
     enable_output_all_leds();
+    clear_all_leds();
     
     // set up TMR 2 and TMR 3
     TMR2_CallbackRegister(TMR2Callback, (uintptr_t) NULL);
     TMR3_CallbackRegister(TMR3Callback, (uintptr_t) NULL);
     
-    uint16_t crc, crc_received;
-
+    // wait for CONFIG packet
+    uint8_t packet_size, duration;
+    bool config_received = false; 
+    uint8_t config_buf[CONFIG_PACKET_SIZE];
+    
     uint8_t start_byte;
-    uint8_t crc_high = 0, crc_low = 0;
     uint8_t msg_len;
-    uint8_t buf[MSG_MAX_LEN];
-    
+    uint16_t crc, crc_received;
     uint8_t i;
+    uint8_t crc_high = 0, crc_low = 0;
     
-    while ( true ) {            
+    while(!config_received) {
         // wait to receive the start byte from the server + start timer once received
         while(1) if (UART5_Read(&start_byte, 1)) break;
         TMR2_Start();
-        
+                
         // receive 16 bit CRC high to low bytes
         while (!timeout_flag) {
             if (UART5_Read(&crc_high, 1)) break;
@@ -153,17 +182,86 @@ int main ( void )
             if (UART5_Read(&msg_len, 1)) break;
         }
         
+        if (msg_len > CONFIG_PACKET_SIZE) {
+            TMR2_Stop();
+            timeout_flag = false;
+            UART5_WriteByte(MSG_NACK);
+            continue;
+        }
+        
+        // read in the rest of the message and stop the timer after
+        uint8_t bytes_received = 0;
+        while (!timeout_flag && bytes_received < msg_len) {
+            if (UART5_Read(&config_buf[bytes_received], 1)) bytes_received++;
+        }
+        
+        TMR2_Stop();
+        
+        // handle data corruption       
+        if (start_byte != MSG_START || timeout_flag || bytes_received != msg_len) {
+            timeout_flag = false;
+            UART5_WriteByte(MSG_NACK);
+            continue;
+        }
+        
+        // process the received CRC
+        crc_received = crc_high;
+        crc_received <<= 8;
+        crc_received |= crc_low;
+        
+        // calculate the CRC AFTER receiving all of the data
+        crc = 0;
+        for (i = 0; i < msg_len; i++) crc = crc_update(crc, config_buf[i]);
+        
+        // compare CRC and send ACK/NACK accordingly
+        if (crc == crc_received) {
+            packet_size = config_buf[0];
+            duration = config_buf[1];
+            
+            timeout_flag = false;
+            UART5_WriteByte(MSG_ACK); // Send ACK
+            break;
+        } else {            
+            // handle data corruption
+            timeout_flag = false;
+            UART5_WriteByte(MSG_NACK); // Send NACK
+        }
+    }    
+    
+    uint8_t buf[packet_size];
+    
+    while ( true ) {            
+        // wait to receive the start byte from the server + start timer once received
+        while(1) if (UART5_Read(&start_byte, 1)) break;
+        TMR2_Start();
+                
+        // receive 16 bit CRC high to low bytes
+        while (!timeout_flag) {
+            if (UART5_Read(&crc_high, 1)) break;
+        }
+        
+        while (!timeout_flag) {
+            if (UART5_Read(&crc_low, 1)) break;
+        }
+        
+        // wait to receive the length of the message
+        while (!timeout_flag) {
+            if (UART5_Read(&msg_len, 1)) break;
+        }
+        
+        if (msg_len > packet_size) {
+            TMR2_Stop();
+            timeout_flag = false;
+            SYS_Tasks ( );
+            UART5_WriteByte(MSG_NACK);
+            continue;
+        }
+        
         // read in the rest of the message and stop the timer after
         uint8_t bytes_received = 0;
         
-        for (i = 0; i < msg_len; i++) {
-            // wait for the next byte of data
-            while (!timeout_flag) {
-                if (UART5_Read(&buf[i], 1)) {
-                    bytes_received++;
-                    break;
-                }
-            }
+        while (!timeout_flag && bytes_received < msg_len) {
+            if (UART5_Read(&buf[bytes_received], 1)) bytes_received++;
         }
         
         TMR2_Stop();
@@ -174,6 +272,15 @@ int main ( void )
             SYS_Tasks ( );
             UART5_WriteByte(MSG_NACK);
             continue;
+        }
+        
+        // check if END_OF_DATA is received
+        if (is_end_of_data(buf, msg_len, packet_size)) {
+            clear_all_leds();
+            timeout_flag = false;
+            SYS_Tasks();
+            UART5_WriteByte(MSG_ACK); // Send ACK
+            break;
         }
         
         // process the received CRC
@@ -191,17 +298,16 @@ int main ( void )
             uint8_t byte_idx;
             for (byte_idx = 0; byte_idx < msg_len; byte_idx++) {
                 clear_all_leds();
-                byte_to_led(buf[byte_idx]);
+                delay_for(duration);
                 
-                // keep light on for 0.25 seconds
-                TMR3_Start();
-                while (!led_timeout_flag);
-                led_timeout_flag = false;
+                byte_to_led(buf[byte_idx]);
+                delay_for(duration);
             }
             
+            timeout_flag = false;
             SYS_Tasks ( );
             UART5_WriteByte(MSG_ACK); // Send ACK
-        } else {
+        } else {            
             // handle data corruption
             timeout_flag = false;
             SYS_Tasks ( );
@@ -210,8 +316,9 @@ int main ( void )
     }
 
     /* Execution should not come here during normal operation */
-
-    return ( EXIT_FAILURE );
+    clear_all_leds();
+    
+    return ( EXIT_SUCCESS );
 }
 
 
