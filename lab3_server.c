@@ -143,7 +143,8 @@ int main(int argc, char* argv[])
 
 
 	// open the audio bytes output file
-	FILE *input_file = fopen("output.txt", "r");
+	FILE *input_file = fopen("lab3_server.o", "r");
+	// FILE *input_file = fopen("output.txt", "r");
 	if (!input_file) {
 		perror("output.txt");
 		exit(EXIT_FAILURE);
@@ -192,6 +193,7 @@ int main(int argc, char* argv[])
 	bool eof = false;
 	char line[16]; // enough to hold "255\n\0"
 	int packet_num = 1;
+	uint8_t byte;
 
 	while(!eof)
 	{
@@ -201,19 +203,12 @@ int main(int argc, char* argv[])
 
 		// Read 10 lines (bytes) from file
 		for (i = 0; i < PACKET_SIZE; i++) {
-			if (fgets(line, sizeof(line), input_file) == NULL) {
+			if (fread(&byte, sizeof(uint8_t), 1, input_file) == 1) {
+				packet[N++] = byte;
+			} else {
 				eof = true;
 				break;
 			}
-
-			// Convert string to integer and store in packet
-			int val = atoi(line);
-			if (val < 0 || val > 255) {
-				fprintf(stderr, "Invalid byte value: %s", line);
-				break;
-			}
-		
-			packet[N++] = (uint8_t)val;
 		}
 		
 		// Compute crc (only lowest 16 bits are returned)

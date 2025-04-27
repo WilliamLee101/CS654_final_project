@@ -12,8 +12,6 @@
 #ifndef _PC_CRC_H
 #define _PC_CRC_H
 
-#include <stdint.h>
-
 uint16_t pc_crc16(uint8_t * ptr, int count);
 
 #endif
