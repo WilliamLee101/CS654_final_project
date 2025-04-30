@@ -10,7 +10,7 @@ CC = gcc
 CFLAGS = -I.. -g -Wall
 
 
-all : server troll serialdebug
+all : server troll serialdebug bytefile
 
 # Server (PC)
 server : $(SERVER_OBJS)
@@ -24,8 +24,12 @@ troll : $(TROLL_OBJS)
 serialdebug : $(SERIALDEBUG_OBJS)
 	$(CC) $(CFLAGS) -o $(SERIALDEBUG) $(SERIALDEBUG_OBJS) $(LIBS)
 
+# Sample byte file
+bytefile: generate_sample_file.o 
+	$(CC) $(CFLAGS) -o generate_sample_file generate_sample_file.o
+
 .c.o :
 	$(CC) $(CFLAGS) -c $< -o $(<:.c=.o)
 
 clean : 
-	rm -f *.o $(SERVER) $(TROLL) $(SERIALDEBUG)
+	rm -f *.o $(SERVER) $(TROLL) $(SERIALDEBUG) generate_sample_file

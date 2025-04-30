@@ -30,6 +30,8 @@
 	"\nUSAGE: %s [-v] [-t percentage] <dev>\n"			\
 	"   -v \t\t Verbose output\n"					\
 	"   -t \t\t Invoke troll with specified bit flipping percentage\n" \
+	"   -p \t\t Specify packet size for sending bytes\n" \
+	"   -d \t\t Specify duration of LED byte flash\n" \
 	"   <dev> \t Path to serial terminal device to use, e.g. /dev/ttyUSB0\n\n"
 
 #define TROLL_PATH "./lab3_troll"
@@ -46,9 +48,10 @@ int main(int argc, char* argv[])
 	char * dev_name = NULL;
 	int PACKET_SIZE = MSG_BYTES_MSG; // default to full packet size
 	int DURATION = 1; // default
+	char * input_filename = "output";
 	
 	/* Parse command line options */
-	while ((opt = getopt(argc, argv, "-t:vp:d:")) != -1) {
+	while ((opt = getopt(argc, argv, "-t:vp:d:f:")) != -1) {
 		switch (opt) {
 		case 1:
 			dev_name_len = strlen(optarg);
@@ -75,6 +78,9 @@ int main(int argc, char* argv[])
 				fprintf(stderr, "LED flash duration must be between 1 and %d\n", MAX_DURATION);
 				exit(EXIT_FAILURE);
 			}
+			break;
+		case 'f':
+			input_filename = strdup(optarg);
 			break;
 		default:
 			break;
@@ -143,10 +149,9 @@ int main(int argc, char* argv[])
 
 
 	// open the audio bytes output file
-	FILE *input_file = fopen("lab3_server.o", "r");
-	// FILE *input_file = fopen("output.txt", "r");
+	FILE *input_file = fopen(input_filename, "r");
 	if (!input_file) {
-		perror("output.txt");
+		perror(input_filename);
 		exit(EXIT_FAILURE);
 	}
 
@@ -191,7 +196,6 @@ int main(int argc, char* argv[])
 
 	// send the data packets
 	bool eof = false;
-	char line[16]; // enough to hold "255\n\0"
 	int packet_num = 1;
 	uint8_t byte;
 
