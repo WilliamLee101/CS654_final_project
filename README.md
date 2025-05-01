@@ -4,6 +4,15 @@
 
 ---
 
+## Table of Contents
+
+- [Project Description](#project-description)
+- [MPLAB Harmony](#mplab-harmony)
+- [How to Compile and Run](#how-to-compile-and-run)
+- [Demo Videos](#demo-videos)
+- [Project Structure](#project-structure)
+- [Potential Improvements](#potential-improvements)
+
 ## Project Description
 
 - Remake of lab 3b with UART serial communication with the board as the client and the laptop running a server script
@@ -27,7 +36,14 @@
   - [Setting up LEDs](https://www.youtube.com/watch?v=dZkVQvZ6C1s&ab_channel=Nezbrun)
   - [Setting up UART](https://www.youtube.com/watch?v=k_dsdO2kWgg&t=87s&ab_channel=Nezbrun)
 
+## How to Compile and Run
+
+```
+make all
+./lab3_server /dev/tty<dev_num> -t 0.1 -p 10 -d 1 -f counting
+```
+
 ## Demo Videos
 
-[Demo Video 1](./assets/demo1.MOV)
-[Demo Video 2](./assets/demo2.MOV)
+- [Demo Video 1](./assets/demo1.MOV)
+- [Demo Video 2](./assets/demo2.MOV)
