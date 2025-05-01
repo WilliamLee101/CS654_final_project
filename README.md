@@ -59,7 +59,7 @@ make all
 ./lab3_server /dev/tty<dev_num> -t 0.1 -p 10 -d 1 -f counting
 ```
 
-## Know Issues
+## Known Issues
 
 - After the server finishes sending the contents of a file, it sends an END_OF_DATA packet to the client. The client waits for this packet and exits execution upon receiving. It is possible for this packet to exist within a file of bytes being sent. In this case, the client will react to the packet and exit before receiving the rest of the data
 - Must restart board program after the server completes before running again
