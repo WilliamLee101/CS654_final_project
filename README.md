@@ -8,10 +8,9 @@
 
 - [Project Description](#project-description)
 - [MPLAB Harmony](#mplab-harmony)
-- [How to Compile and Run](#how-to-compile-and-run)
 - [Demo Videos](#demo-videos)
+- [How to Compile and Run](#how-to-compile-and-run)
 - [Project Structure](#project-structure)
-- [Potential Improvements](#potential-improvements)
 
 ## Project Description
 
@@ -36,6 +35,11 @@
   - [Setting up LEDs](https://www.youtube.com/watch?v=dZkVQvZ6C1s&ab_channel=Nezbrun)
   - [Setting up UART](https://www.youtube.com/watch?v=k_dsdO2kWgg&t=87s&ab_channel=Nezbrun)
 
+## Demo Videos
+
+- [Demo Video 1](./assets/demo1.MOV)
+- [Demo Video 2](./assets/demo2.MOV)
+
 ## How to Compile and Run
 
 ```
@@ -43,7 +47,157 @@ make all
 ./lab3_server /dev/tty<dev_num> -t 0.1 -p 10 -d 1 -f counting
 ```
 
-## Demo Videos
+## Project Structure
 
-- [Demo Video 1](./assets/demo1.MOV)
-- [Demo Video 2](./assets/demo2.MOV)
+```
+.
+├── assets
+│   ├── demo1.MOV
+│   └── demo2.MOV
+├── final_project.X
+│   ├── build
+│   │   └── default
+│   │       ├── debug
+│   │       │   └── _ext
+│   │       │       ├── 1171490990
+│   │       │       │   ├── exceptions.o
+│   │       │       │   ├── exceptions.o.d
+│   │       │       │   ├── initialization.o
+│   │       │       │   ├── initialization.o.d
+│   │       │       │   ├── interrupts.o
+│   │       │       │   └── interrupts.o.d
+│   │       │       ├── 1360937237
+│   │       │       │   ├── main.o
+│   │       │       │   └── main.o.d
+│   │       │       ├── 163028504
+│   │       │       │   ├── xc32_monitor.o
+│   │       │       │   └── xc32_monitor.o.d
+│   │       │       ├── 1865200349
+│   │       │       │   ├── plib_evic.o
+│   │       │       │   └── plib_evic.o.d
+│   │       │       ├── 1865254177
+│   │       │       │   ├── plib_gpio.o
+│   │       │       │   └── plib_gpio.o.d
+│   │       │       ├── 1865657120
+│   │       │       │   ├── plib_uart5.o
+│   │       │       │   └── plib_uart5.o.d
+│   │       │       ├── 60165520
+│   │       │       │   ├── plib_clk.o
+│   │       │       │   └── plib_clk.o.d
+│   │       │       └── 60181895
+│   │       │           ├── plib_tmr2.o
+│   │       │           ├── plib_tmr2.o.d
+│   │       │           ├── plib_tmr3.o
+│   │       │           └── plib_tmr3.o.d
+│   │       └── production
+│   │           └── _ext
+│   │               ├── 1171490990
+│   │               │   ├── exceptions.o
+│   │               │   ├── exceptions.o.d
+│   │               │   ├── initialization.o
+│   │               │   ├── initialization.o.d
+│   │               │   ├── interrupts.o
+│   │               │   └── interrupts.o.d
+│   │               ├── 1360937237
+│   │               │   ├── main.o
+│   │               │   └── main.o.d
+│   │               ├── 163028504
+│   │               │   ├── xc32_monitor.o
+│   │               │   └── xc32_monitor.o.d
+│   │               ├── 1865200349
+│   │               │   ├── plib_evic.o
+│   │               │   └── plib_evic.o.d
+│   │               ├── 1865254177
+│   │               │   ├── plib_gpio.o
+│   │               │   └── plib_gpio.o.d
+│   │               ├── 1865657120
+│   │               │   ├── plib_uart2.o
+│   │               │   ├── plib_uart2.o.d
+│   │               │   ├── plib_uart5.o
+│   │               │   └── plib_uart5.o.d
+│   │               ├── 60165520
+│   │               │   ├── plib_clk.o
+│   │               │   └── plib_clk.o.d
+│   │               └── 60181895
+│   │                   ├── plib_tmr2.o
+│   │                   ├── plib_tmr2.o.d
+│   │                   ├── plib_tmr3.o
+│   │                   └── plib_tmr3.o.d
+│   ├── config
+│   │   └── default
+│   │       ├── default.mhc
+│   │       ├── peripheral
+│   │       │   ├── clk
+│   │       │   │   ├── plib_clk.c
+│   │       │   │   └── plib_clk.h
+│   │       │   ├── evic
+│   │       │   │   ├── plib_evic.c
+│   │       │   │   └── plib_evic.h
+│   │       │   ├── gpio
+│   │       │   │   ├── plib_gpio.c
+│   │       │   │   └── plib_gpio.h
+│   │       │   ├── tmr
+│   │       │   │   ├── plib_tmr2.c
+│   │       │   │   ├── plib_tmr2.h
+│   │       │   │   ├── plib_tmr3.c
+│   │       │   │   ├── plib_tmr3.h
+│   │       │   │   └── plib_tmr_common.h
+│   │       │   └── uart
+│   │       │       ├── plib_uart5.c
+│   │       │       ├── plib_uart5.h
+│   │       │       └── plib_uart_common.h
+│   │       ├── stdio
+│   │       │   └── xc32_monitor.c
+│   │       ├── definitions.h
+│   │       ├── device.h
+│   │       ├── exceptions.c
+│   │       ├── harmony-manifest-success.yml
+│   │       ├── initialization.c
+│   │       ├── interrupts.c
+│   │       ├── interrupts.h
+│   │       ├── p32MZ2048EFH100.ld
+│   │       └── toolchain_specifics.h
+│   ├── debug
+│   │   └── default
+│   ├── dist
+│   │   └── default
+│   │       ├── debug
+│   │       │   ├── final_project.X.debug.elf
+│   │       │   ├── final_project.X.debug.map
+│   │       │   └── memoryfile.xml
+│   │       └── production
+│   │           ├── final_project.X.production.elf
+│   │           ├── final_project.X.production.hex
+│   │           ├── final_project.X.production.map
+│   │           └── memoryfile.xml
+│   ├── nbproject
+│   │   ├── private
+│   │   │   ├── configurations.xml
+│   │   │   └── private.xml
+│   │   ├── Makefile-default.mk
+│   │   ├── Makefile-genesis.properties
+│   │   ├── Makefile-impl.mk
+│   │   ├── Makefile-local-default.mk
+│   │   ├── Makefile-variables.mk
+│   │   ├── configurations.xml
+│   │   └── project.xml
+│   ├── Makefile
+│   ├── final_project.mc3
+│   ├── main.c
+│   ├── mcc-manifest-autosave.yml
+│   └── mcc-manifest-generated-success.yml
+├── utils
+│   └── convert_to_8bit.py
+├── Makefile
+├── Makefile.pc
+├── README.md
+├── generate_sample_file.c
+├── lab3.h
+├── lab3_server.c
+├── lab3_troll.c
+├── lab3_troll.h
+├── output
+├── pc_crc16.c
+├── pc_crc16.h
+└── serialdebug.c
+```
