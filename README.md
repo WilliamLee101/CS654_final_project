@@ -7,9 +7,11 @@
 ## Table of Contents
 
 - [Project Description](#project-description)
+- [Procedure](#procedure)
 - [MPLAB Harmony](#mplab-harmony)
 - [Demo Videos](#demo-videos)
 - [How to Compile and Run](#how-to-compile-and-run)
+- [Known Issues](#known-issues)
 - [Project Structure](#project-structure)
 
 ## Project Description
@@ -24,6 +26,16 @@
   - -f: allows you to specify the filename in the current directory to send to the board in bytes
   - -p: allows you to specify the packet size for the byte packets send to the board
   - -d: allows you to specify the duration that the LEDs flash when representing a single byte
+
+## Procedure
+
+- Read over datasheets for the given board, PIM, and microchip
+- Configure needed pins for TMR2, TMR3, UART5, LED3, LED4, LED5, LED6, LED7, LED8, LED9, LED10 in MPLAB Harmony
+- Generate the firmware peripheral files
+- Edit board code from lab 3 to use the UART and timer functions defined in the generated firmware
+- Edit byte receiving logic to allow for a config packet and to recieve packets of raw bytes
+- Edit the lab3_server.c file from lab 3 to break up files of bytes into packets and send them to the board
+- Test
 
 ## MPLAB Harmony
 
@@ -46,6 +58,11 @@
 make all
 ./lab3_server /dev/tty<dev_num> -t 0.1 -p 10 -d 1 -f counting
 ```
+
+## Know Issues
+
+- After the server finishes sending the contents of a file, it sends an END_OF_DATA packet to the client. The client waits for this packet and exits execution upon receiving. It is possible for this packet to exist within a file of bytes being sent. In this case, the client will react to the packet and exit before receiving the rest of the data
+- Must restart board program after the server completes before running again
 
 ## Project Structure
 
