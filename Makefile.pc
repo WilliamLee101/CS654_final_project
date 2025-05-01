@@ -10,7 +10,7 @@ CC = gcc
 CFLAGS = -I.. -g -Wall
 
 
-all : server troll serialdebug bytefile
+all : server troll serialdebug bytefile counting
 
 # Server (PC)
 server : $(SERVER_OBJS)
@@ -28,8 +28,11 @@ serialdebug : $(SERIALDEBUG_OBJS)
 bytefile: generate_sample_file.o 
 	$(CC) $(CFLAGS) -o generate_sample_file generate_sample_file.o
 
+counting: generate_sample_file
+	./generate_sample_file
+
 .c.o :
 	$(CC) $(CFLAGS) -c $< -o $(<:.c=.o)
 
 clean : 
-	rm -f *.o $(SERVER) $(TROLL) $(SERIALDEBUG) generate_sample_file
+	rm -f *.o $(SERVER) $(TROLL) $(SERIALDEBUG) generate_sample_file counting
