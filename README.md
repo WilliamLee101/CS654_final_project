@@ -14,6 +14,7 @@
 - [How to Compile and Run](#how-to-compile-and-run)
 - [Known Issues](#known-issues)
 - [Project Structure](#project-structure)
+- [Reflection](#reflection)
 
 ## Project Description
 
@@ -294,3 +295,12 @@ Make sure to flash the board from MPLABX IDE before running the server executabl
 ├── pc_crc16.h
 └── serialdebug.c
 ```
+
+## Reflection
+
+- There are two main challenges we faced:
+- (i) Since we were working with a new microchip, it was difficult to figure out how to set up the configurations initially due to unfamiliarity.
+- (ii) We had a problem where the receiver didn’t know if all the packets were received, which caused the process to halt.
+- After looking up datasheets and references and figuring out how to use MPLAB Harmony, it became much easier to set up for our task.
+- We later resolved the second challenge by sending a packet that indicates the end of a file, which solved the problem.
+- Overall, we resolved our challenges by spending time becoming familiar with the configurations, setup, and debugging. Through this project, we learned the proper procedure for setting up all configurations and implementing robust serial communication, which is very useful for any future projects.
